@@ -1,11 +1,11 @@
 # AI-Court Frontend
 
-React-based frontend for the AI-Court legal-tech platform with Firebase authentication and role-based access control.
+React-based frontend for the AI-Court legal-tech platform with JWT authentication and role-based access control.
 
 ## Features
 
 ### 🔐 Authentication
-- Firebase Authentication with email/password and Google sign-in
+- JWT Authentication with email/password
 - Role-based access control (User vs Court Official)
 - JWT token management for session handling
 - Protected routes for different user types
@@ -37,7 +37,7 @@ React-based frontend for the AI-Court legal-tech platform with Firebase authenti
 ### Prerequisites
 - Node.js (v16 or higher)
 - npm or yarn
-- Firebase project setup
+
 
 ### Installation
 
@@ -52,24 +52,16 @@ npm install
 cp env.example .env
 ```
 
-Update `.env` with your Firebase configuration:
+Update `.env` with your backend API configuration:
 ```env
-# Firebase Configuration
-VITE_FIREBASE_API_KEY=your-api-key
-VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your-project-id
-VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
-VITE_FIREBASE_APP_ID=your-app-id
+# Backend API Configuration
+VITE_API_URL=http://localhost:5000/api
 
 # Backend API URL
 VITE_API_URL=http://localhost:5000
 ```
 
-3. **Configure Firebase:**
-   - Create a Firebase project at [Firebase Console](https://console.firebase.google.com/)
-   - Enable Authentication (Email/Password and Google)
-   - Update the `.env` file with your Firebase configuration
+
 
 4. **Start development server:**
 ```bash
@@ -97,14 +89,14 @@ src/
 │   ├── CourtDashboard.jsx
 │   └── ...            # Other user/court pages
 ├── config/             # Configuration files
-│   └── firebase.js    # Firebase configuration
+
 └── App.jsx            # Main app component with routing
 ```
 
 ## Authentication Flow
 
 1. **Landing Page**: Users choose their role (User/Court)
-2. **Signup/Login**: Firebase authentication with role selection
+2. **Signup/Login**: JWT authentication with role selection
 3. **Role-based Routing**: Automatic redirection to appropriate dashboard
 4. **Protected Routes**: Role-specific access control
 5. **Session Management**: JWT tokens for backend communication
