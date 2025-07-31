@@ -1,12 +1,193 @@
-# React + Vite
+# AI-Court Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React-based frontend for the AI-Court legal-tech platform with Firebase authentication and role-based access control.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### 🔐 Authentication
+- Firebase Authentication with email/password and Google sign-in
+- Role-based access control (User vs Court Official)
+- JWT token management for session handling
+- Protected routes for different user types
 
-## Expanding the ESLint configuration
+### 👤 User Features
+- **Dashboard**: Overview of cases, quick actions, and statistics
+- **File Dispute**: Chat-based dispute filing interface
+- **AI Suggestions**: Get legal advice, IPC sections, and case precedents
+- **Mediation**: Schedule and attend virtual mediations
+- **Documents**: View and manage legal documents
+- **Case History**: Track case progress and history
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 🏛️ Court Features
+- **Dashboard**: Court case management overview
+- **Review Cases**: Review pending case submissions
+- **Schedule**: Schedule hearings and mediations
+- **Documents**: Generate legal documents and orders
+- **Calendar**: Manage court calendar and proceedings
+
+### 🎨 UI/UX
+- Modern, responsive design with Tailwind CSS
+- Smooth animations with Framer Motion
+- Mobile-friendly interface
+- Legal-themed design with trustworthy appearance
+- Role-specific navigation and branding
+
+## Setup
+
+### Prerequisites
+- Node.js (v16 or higher)
+- npm or yarn
+- Firebase project setup
+
+### Installation
+
+1. **Install dependencies:**
+```bash
+npm install
+```
+
+2. **Set up environment variables:**
+```bash
+# Copy the example environment file
+cp env.example .env
+```
+
+Update `.env` with your Firebase configuration:
+```env
+# Firebase Configuration
+VITE_FIREBASE_API_KEY=your-api-key
+VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+VITE_FIREBASE_APP_ID=your-app-id
+
+# Backend API URL
+VITE_API_URL=http://localhost:5000
+```
+
+3. **Configure Firebase:**
+   - Create a Firebase project at [Firebase Console](https://console.firebase.google.com/)
+   - Enable Authentication (Email/Password and Google)
+   - Update the `.env` file with your Firebase configuration
+
+4. **Start development server:**
+```bash
+npm run dev
+```
+
+4. **Build for production:**
+```bash
+npm run build
+```
+
+## Project Structure
+
+```
+src/
+├── components/          # Reusable UI components
+│   └── Navbar.jsx     # Role-based navigation
+├── contexts/           # React contexts
+│   └── AuthContext.jsx # Authentication state management
+├── pages/              # Page components
+│   ├── Landing.jsx    # Main landing page
+│   ├── Login.jsx      # Authentication pages
+│   ├── Signup.jsx
+│   ├── UserDashboard.jsx
+│   ├── CourtDashboard.jsx
+│   └── ...            # Other user/court pages
+├── config/             # Configuration files
+│   └── firebase.js    # Firebase configuration
+└── App.jsx            # Main app component with routing
+```
+
+## Authentication Flow
+
+1. **Landing Page**: Users choose their role (User/Court)
+2. **Signup/Login**: Firebase authentication with role selection
+3. **Role-based Routing**: Automatic redirection to appropriate dashboard
+4. **Protected Routes**: Role-specific access control
+5. **Session Management**: JWT tokens for backend communication
+
+## Role-Based Access
+
+### User (Citizen)
+- File civil disputes
+- Access AI-powered legal suggestions
+- Schedule mediations
+- View case history and documents
+- Track case progress
+
+### Court Official
+- Review case submissions
+- Schedule hearings and mediations
+- Generate legal documents
+- Manage court calendar
+- Oversee case proceedings
+
+## Backend Integration
+
+The frontend communicates with the Node.js/Express backend:
+- API Base URL: `http://localhost:5000/api`
+- Authentication via Firebase tokens
+- Role-specific endpoints (`/user/*` and `/court/*`)
+
+## Development
+
+### Adding New Pages
+1. Create page component in `src/pages/`
+2. Add route in `App.jsx` with appropriate protection
+3. Update navigation in `Navbar.jsx` if needed
+
+### Styling
+- Use Tailwind CSS classes
+- Follow the established design system
+- Ensure mobile responsiveness
+- Use Framer Motion for animations
+
+### State Management
+- Use React Context for global state (AuthContext)
+- Local state for component-specific data
+- Backend API calls via axios
+
+## Deployment
+
+1. **Build the project:**
+```bash
+npm run build
+```
+
+2. **Deploy to your preferred platform:**
+   - Vercel (recommended)
+   - Netlify
+   - Firebase Hosting
+   - AWS S3 + CloudFront
+
+3. **Environment Variables:**
+   - Update Firebase config for production
+   - Set backend API URL
+   - Configure CORS settings
+
+## Contributing
+
+1. Follow the existing code structure
+2. Use functional components with hooks
+3. Implement proper error handling
+4. Add loading states for async operations
+5. Test on mobile devices
+6. Ensure accessibility standards
+
+## Tech Stack
+
+- **React 19** - UI framework
+- **Vite** - Build tool and dev server
+- **React Router** - Client-side routing
+- **Firebase** - Authentication and backend services
+- **Tailwind CSS** - Styling framework
+- **Framer Motion** - Animations
+- **Lucide React** - Icons
+- **Axios** - HTTP client
+
+## License
+
+MIT License - see LICENSE file for details.
