@@ -4,41 +4,53 @@ const bcrypt = require('bcryptjs');
 const userSchema = new mongoose.Schema({
   email: {
     type: String,
-    required: true,
+    required: [true, 'Email is required'],
     unique: true,
     lowercase: true,
-    trim: true
+    trim: true,
+    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
   },
   password: {
     type: String,
-    required: true,
-    minlength: 6
+    required: function() {
+      // Password is required only if not using Firebase
+      return !this.firebaseUid;
+    },
+    minlength: [6, 'Password must be at least 6 characters long']
   },
   role: {
     type: String,
-    enum: ['user', 'court'],
+    enum: {
+      values: ['user', 'court'],
+      message: 'Role must be either "user" or "court"'
+    },
     default: 'user'
   },
   displayName: {
     type: String,
-    required: true,
-    trim: true
+    required: [true, 'Display name is required'],
+    trim: true,
+    minlength: [2, 'Display name must be at least 2 characters long']
   },
   phone: {
     type: String,
-    trim: true
+    trim: true,
+    match: [/^[\+]?[1-9][\d]{0,15}$/, 'Please enter a valid phone number']
   },
   address: {
     type: String,
-    trim: true
+    trim: true,
+    maxlength: [500, 'Address cannot exceed 500 characters']
   },
   court: {
     type: String,
-    trim: true
+    trim: true,
+    maxlength: [200, 'Court name cannot exceed 200 characters']
   },
   designation: {
     type: String,
-    trim: true
+    trim: true,
+    maxlength: [100, 'Designation cannot exceed 100 characters']
   },
   isActive: {
     type: Boolean,
@@ -47,17 +59,48 @@ const userSchema = new mongoose.Schema({
   lastLogin: {
     type: Date,
     default: Date.now
+  },
+  emailVerified: {
+    type: Boolean,
+    default: false
+  },
+  resetPasswordToken: String,
+  resetPasswordExpires: Date,
+  // Firebase fields
+  firebaseUid: {
+    type: String,
+    unique: true,
+    sparse: true,
+    trim: true
+  },
+  provider: {
+    type: String,
+    enum: ['local', 'google', 'email', 'firebase'],
+    default: 'local'
+  },
+  photoURL: {
+    type: String,
+    trim: true,
+    match: [/^https?:\/\/.+/, 'Photo URL must be a valid HTTP/HTTPS URL']
   }
 }, {
   timestamps: true
 });
 
-// Hash password before saving
+// Create indexes for better performance
+userSchema.index({ role: 1 });
+userSchema.index({ isActive: 1 });
+userSchema.index({ provider: 1 });
+
+// Hash password before saving (only if password is provided and not using Firebase)
 userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
+  // Only hash the password if it has been modified (or is new) and not using Firebase
+  if (!this.isModified('password') || this.firebaseUid) return next();
   
   try {
+    // Generate a salt with cost factor 12
     const salt = await bcrypt.genSalt(12);
+    // Hash the password with the salt
     this.password = await bcrypt.hash(this.password, salt);
     next();
   } catch (error) {
@@ -67,14 +110,65 @@ userSchema.pre('save', async function(next) {
 
 // Compare password method
 userSchema.methods.comparePassword = async function(candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.password);
+  try {
+    // If user is using Firebase, they don't have a password
+    if (this.firebaseUid) {
+      return false;
+    }
+    return await bcrypt.compare(candidatePassword, this.password);
+  } catch (error) {
+    throw new Error('Password comparison failed');
+  }
 };
 
 // Remove password from JSON output
 userSchema.methods.toJSON = function() {
   const user = this.toObject();
   delete user.password;
+  delete user.resetPasswordToken;
+  delete user.resetPasswordExpires;
   return user;
+};
+
+// Static method to find user by email
+userSchema.statics.findByEmail = function(email) {
+  return this.findOne({ email: email.toLowerCase() });
+};
+
+// Static method to find user by Firebase UID
+userSchema.statics.findByFirebaseUid = function(firebaseUid) {
+  return this.findOne({ firebaseUid });
+};
+
+// Static method to find active users
+userSchema.statics.findActive = function() {
+  return this.find({ isActive: true });
+};
+
+// Instance method to update last login
+userSchema.methods.updateLastLogin = function() {
+  this.lastLogin = new Date();
+  return this.save();
+};
+
+// Instance method to deactivate account
+userSchema.methods.deactivate = function() {
+  this.isActive = false;
+  return this.save();
+};
+
+// Instance method to activate account
+userSchema.methods.activate = function() {
+  this.isActive = true;
+  return this.save();
+};
+
+// Instance method to link Firebase account
+userSchema.methods.linkFirebase = function(firebaseUid, provider) {
+  this.firebaseUid = firebaseUid;
+  this.provider = provider;
+  this.emailVerified = true;
+  return this.save();
 };
 
 module.exports = mongoose.model('User', userSchema); 

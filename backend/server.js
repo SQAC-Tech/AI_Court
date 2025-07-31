@@ -7,7 +7,7 @@ require('dotenv').config();
 
 // Import configurations and routes
 const connectDB = require('./config/database');
-const { initializeFirebase } = require('./config/firebase');
+const { initializeFirebase, isFirebaseInitialized } = require('./config/firebase');
 const authRoutes = require('./routes/auth');
 const caseRoutes = require('./routes/cases');
 const documentRoutes = require('./routes/documents');
@@ -18,11 +18,19 @@ const PORT = process.env.PORT || 5000;
 // Connect to MongoDB
 connectDB();
 
-// Initialize Firebase Admin SDK
-initializeFirebase();
+// Initialize Firebase Admin SDK (non-blocking)
+try {
+  initializeFirebase();
+} catch (error) {
+  console.warn('Firebase initialization failed, continuing without Firebase:', error.message);
+}
 
-// Security middleware
-app.use(helmet());
+// Security middleware with custom configuration for Firebase popup auth
+app.use(helmet({
+  crossOriginEmbedderPolicy: false,
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 app.use(morgan('combined'));
 
 // Rate limiting
@@ -36,7 +44,9 @@ app.use(limiter);
 // CORS configuration
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 // Body parsing middleware
@@ -49,7 +59,8 @@ app.get('/', (req, res) => {
     message: 'AI-Court Backend API',
     version: '1.0.0',
     status: 'running',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    firebase: isFirebaseInitialized() ? 'initialized' : 'not configured'
   });
 });
 
@@ -85,6 +96,21 @@ app.use((error, req, res, next) => {
     });
   }
   
+  // Handle JWT errors
+  if (error.name === 'JsonWebTokenError') {
+    return res.status(401).json({
+      error: 'Invalid token',
+      message: 'Token is malformed or invalid'
+    });
+  }
+  
+  if (error.name === 'TokenExpiredError') {
+    return res.status(401).json({
+      error: 'Token expired',
+      message: 'Your session has expired. Please login again.'
+    });
+  }
+  
   res.status(error.status || 500).json({
     error: 'Internal server error',
     message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
@@ -97,4 +123,5 @@ app.listen(PORT, () => {
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
   console.log(`🗄️  Database: MongoDB`);
+  console.log(`🔥 Firebase: ${isFirebaseInitialized() ? 'Initialized' : 'Not configured'}`);
 }); 

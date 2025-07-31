@@ -42,7 +42,7 @@ const Documents = () => {
   const fetchDocuments = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/documents/my-documents');
+      const response = await axios.get('/api/documents/my-documents');
       setDocuments(response.data.documents);
     } catch (error) {
       console.error('Error fetching documents:', error);
@@ -66,7 +66,7 @@ const Documents = () => {
       formData.append('description', uploadForm.description);
       formData.append('tags', uploadForm.tags);
 
-      await axios.post('/documents/upload', formData, {
+      await axios.post('/api/documents/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -85,7 +85,7 @@ const Documents = () => {
 
   const handleDownload = async (documentId, filename) => {
     try {
-      const response = await axios.get(`/documents/${documentId}/download`, {
+      const response = await axios.get(`/api/documents/${documentId}/download`, {
         responseType: 'blob'
       });
       
@@ -106,7 +106,7 @@ const Documents = () => {
     if (!confirm('Are you sure you want to delete this document?')) return;
 
     try {
-      await axios.delete(`/documents/${documentId}`);
+      await axios.delete(`/api/documents/${documentId}`);
       fetchDocuments();
     } catch (error) {
       console.error('Error deleting document:', error);

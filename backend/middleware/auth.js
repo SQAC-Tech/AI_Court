@@ -1,10 +1,18 @@
-const admin = require('firebase-admin');
+const { getFirebaseAdmin, isFirebaseInitialized } = require('../config/firebase');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
 // Verify Firebase ID token
 const verifyFirebaseToken = async (req, res, next) => {
   try {
+    // Check if Firebase is initialized
+    if (!isFirebaseInitialized()) {
+      return res.status(500).json({ 
+        error: 'Firebase not configured',
+        message: 'Firebase Admin SDK is not properly initialized'
+      });
+    }
+
     const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -15,15 +23,16 @@ const verifyFirebaseToken = async (req, res, next) => {
     }
     
     const token = authHeader.split('Bearer ')[1];
+    const admin = getFirebaseAdmin();
     const decodedToken = await admin.auth().verifyIdToken(token);
     
     req.user = decodedToken;
     next();
   } catch (error) {
-    console.error('Token verification failed:', error);
+    console.error('Firebase token verification failed:', error);
     return res.status(401).json({ 
       error: 'Invalid token',
-      message: 'Token verification failed'
+      message: 'Firebase token verification failed'
     });
   }
 };
@@ -41,14 +50,31 @@ const verifyJWT = async (req, res, next) => {
     }
     
     const token = authHeader.split('Bearer ')[1];
+    
+    // Check if JWT_SECRET is configured
+    if (!process.env.JWT_SECRET) {
+      console.error('JWT_SECRET not configured');
+      return res.status(500).json({ 
+        error: 'Server configuration error',
+        message: 'JWT secret not configured'
+      });
+    }
+    
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     // Get user from database
     const user = await User.findById(decoded.userId).select('-password');
-    if (!user || !user.isActive) {
+    if (!user) {
       return res.status(401).json({ 
-        error: 'User not found or inactive',
+        error: 'User not found',
         message: 'Invalid user account'
+      });
+    }
+    
+    if (!user.isActive) {
+      return res.status(401).json({ 
+        error: 'Account disabled',
+        message: 'Your account has been disabled'
       });
     }
     
@@ -56,6 +82,21 @@ const verifyJWT = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('JWT verification failed:', error);
+    
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ 
+        error: 'Token expired',
+        message: 'Your session has expired. Please login again.'
+      });
+    }
+    
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ 
+        error: 'Invalid token',
+        message: 'Token is malformed or invalid'
+      });
+    }
+    
     return res.status(401).json({ 
       error: 'Invalid token',
       message: 'Token verification failed'
@@ -66,7 +107,14 @@ const verifyJWT = async (req, res, next) => {
 // Check if user has required role
 const requireRole = (roles) => {
   return (req, res, next) => {
-    const userRole = req.user.role || req.query.role;
+    if (!req.user) {
+      return res.status(401).json({ 
+        error: 'Authentication required',
+        message: 'User not authenticated'
+      });
+    }
+    
+    const userRole = req.user.role;
     
     if (!userRole || !roles.includes(userRole)) {
       return res.status(403).json({ 
@@ -81,6 +129,10 @@ const requireRole = (roles) => {
 
 // Generate JWT token
 const generateToken = (userId, email, role) => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET not configured');
+  }
+  
   return jwt.sign(
     { userId, email, role },
     process.env.JWT_SECRET,
@@ -88,9 +140,39 @@ const generateToken = (userId, email, role) => {
   );
 };
 
+// Optional authentication middleware
+const optionalAuth = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return next(); // Continue without authentication
+    }
+    
+    const token = authHeader.split('Bearer ')[1];
+    
+    if (!process.env.JWT_SECRET) {
+      return next(); // Continue without authentication
+    }
+    
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.userId).select('-password');
+    
+    if (user && user.isActive) {
+      req.user = user;
+    }
+    
+    next();
+  } catch (error) {
+    // Continue without authentication on error
+    next();
+  }
+};
+
 module.exports = {
   verifyFirebaseToken,
   verifyJWT,
   requireRole,
-  generateToken
+  generateToken,
+  optionalAuth
 }; 
