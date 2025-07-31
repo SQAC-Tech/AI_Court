@@ -1,41 +1,5 @@
-const { getFirebaseAdmin, isFirebaseInitialized } = require('../config/firebase');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-
-// Verify Firebase ID token
-const verifyFirebaseToken = async (req, res, next) => {
-  try {
-    // Check if Firebase is initialized
-    if (!isFirebaseInitialized()) {
-      return res.status(500).json({ 
-        error: 'Firebase not configured',
-        message: 'Firebase Admin SDK is not properly initialized'
-      });
-    }
-
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ 
-        error: 'No token provided',
-        message: 'Authorization header missing or invalid'
-      });
-    }
-    
-    const token = authHeader.split('Bearer ')[1];
-    const admin = getFirebaseAdmin();
-    const decodedToken = await admin.auth().verifyIdToken(token);
-    
-    req.user = decodedToken;
-    next();
-  } catch (error) {
-    console.error('Firebase token verification failed:', error);
-    return res.status(401).json({ 
-      error: 'Invalid token',
-      message: 'Firebase token verification failed'
-    });
-  }
-};
 
 // Verify JWT token
 const verifyJWT = async (req, res, next) => {
@@ -170,7 +134,6 @@ const optionalAuth = async (req, res, next) => {
 };
 
 module.exports = {
-  verifyFirebaseToken,
   verifyJWT,
   requireRole,
   generateToken,

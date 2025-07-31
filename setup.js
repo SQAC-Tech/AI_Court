@@ -93,17 +93,7 @@ MONGODB_URI=mongodb://localhost:27017/ai-court
 # JWT Configuration
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 
-# Firebase Admin SDK Configuration (Optional)
-FIREBASE_TYPE=service_account
-FIREBASE_PROJECT_ID=your-firebase-project-id
-FIREBASE_PRIVATE_KEY_ID=your-private-key-id
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\\nYour private key here\\n-----END PRIVATE KEY-----\\n"
-FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@your-project.iam.gserviceaccount.com
-FIREBASE_CLIENT_ID=your-client-id
-FIREBASE_AUTH_URI=https://accounts.google.com/o/oauth2/auth
-FIREBASE_TOKEN_URI=https://oauth2.googleapis.com/token
-FIREBASE_AUTH_PROVIDER_X509_CERT_URL=https://www.googleapis.com/oauth2/v1/certs
-FIREBASE_CLIENT_X509_CERT_URL=https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-xxxxx%40your-project.iam.gserviceaccount.com
+
 
 # Frontend URL for CORS
 FRONTEND_URL=http://localhost:5173
@@ -120,16 +110,7 @@ FRONTEND_URL=http://localhost:5173
     const frontendEnvContent = `# Backend API URL
 VITE_API_URL=http://localhost:5000/api
 
-# Firebase Configuration (Optional)
-VITE_FIREBASE_API_KEY=your-firebase-api-key
-VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your-firebase-project-id
-VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=your-messaging-sender-id
-VITE_FIREBASE_APP_ID=your-firebase-app-id
 
-# Firebase Emulator (for development)
-VITE_USE_FIREBASE_EMULATOR=false
 `;
     
     fs.writeFileSync(frontendEnvPath, frontendEnvContent);
@@ -180,7 +161,7 @@ const displayNextSteps = () => {
 ${colors.green}1. Configure Environment Variables:${colors.reset}
    - Edit backend/.env with your MongoDB connection and JWT secret
    - Edit frontend/.env with your backend API URL
-   - (Optional) Configure Firebase for enhanced authentication
+   
 
 ${colors.green}2. Start the Application:${colors.reset}
    ${colors.cyan}Backend:${colors.reset} cd backend && npm run dev
@@ -198,7 +179,7 @@ ${colors.green}4. Demo Accounts:${colors.reset}
 ${colors.yellow}⚠️  Important Security Notes:${colors.reset}
    - Change the JWT_SECRET in production
    - Update demo account passwords
-   - Configure proper Firebase credentials
+   
    - Set up HTTPS in production
 
 ${colors.blue}📚 Documentation:${colors.reset}

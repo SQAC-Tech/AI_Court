@@ -4,7 +4,7 @@ A comprehensive legal technology platform that combines AI-powered dispute resol
 
 ## 🚀 Features
 
-- **User Authentication**: Secure JWT-based authentication with Firebase integration
+- **User Authentication**: Secure JWT-based authentication with MongoDB
 - **Role-based Access**: Separate interfaces for users and court officials
 - **AI-Powered Dispute Resolution**: Intelligent case analysis and suggestions
 - **Document Management**: Secure file upload and management system
@@ -17,14 +17,14 @@ A comprehensive legal technology platform that combines AI-powered dispute resol
 ### Backend
 - **Node.js** with Express.js
 - **MongoDB** with Mongoose ODM
-- **Firebase Admin SDK** for authentication
+
 - **JWT** for session management
 - **bcryptjs** for password hashing
 - **express-validator** for input validation
 
 ### Frontend
 - **React** with Vite
-- **Firebase Client SDK** for authentication
+
 - **Axios** for API communication
 - **Context API** for state management
 
@@ -32,7 +32,7 @@ A comprehensive legal technology platform that combines AI-powered dispute resol
 
 - Node.js (v16 or higher)
 - MongoDB (v4.4 or higher)
-- Firebase project (for authentication)
+
 
 ## 🔧 Installation & Setup
 
@@ -71,29 +71,13 @@ MONGODB_URI=mongodb://localhost:27017/ai-court
 # JWT Configuration
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 
-# Firebase Admin SDK Configuration
-FIREBASE_TYPE=service_account
-FIREBASE_PROJECT_ID=your-firebase-project-id
-FIREBASE_PRIVATE_KEY_ID=your-private-key-id
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour private key here\n-----END PRIVATE KEY-----\n"
-FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@your-project.iam.gserviceaccount.com
-FIREBASE_CLIENT_ID=your-client-id
-FIREBASE_AUTH_URI=https://accounts.google.com/o/oauth2/auth
-FIREBASE_TOKEN_URI=https://oauth2.googleapis.com/token
-FIREBASE_AUTH_PROVIDER_X509_CERT_URL=https://www.googleapis.com/oauth2/v1/certs
-FIREBASE_CLIENT_X509_CERT_URL=https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-xxxxx%40your-project.iam.gserviceaccount.com
+
 
 # Frontend URL for CORS
 FRONTEND_URL=http://localhost:5173
 ```
 
-#### Firebase Setup
 
-1. Go to [Firebase Console](https://console.firebase.google.com/)
-2. Create a new project or select existing one
-3. Go to Project Settings > Service Accounts
-4. Generate a new private key
-5. Download the JSON file and copy the values to your `.env` file
 
 ### 3. Frontend Setup
 
@@ -116,24 +100,10 @@ Edit the `.env` file with your configuration:
 # Backend API URL
 VITE_API_URL=http://localhost:5000/api
 
-# Firebase Configuration
-VITE_FIREBASE_API_KEY=your-firebase-api-key
-VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your-firebase-project-id
-VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=your-messaging-sender-id
-VITE_FIREBASE_APP_ID=your-firebase-app-id
 
-# Firebase Emulator (for development)
-VITE_USE_FIREBASE_EMULATOR=false
 ```
 
-#### Firebase Client Setup
 
-1. In Firebase Console, go to Project Settings > General
-2. Scroll down to "Your apps" section
-3. Add a web app if not already added
-4. Copy the configuration values to your frontend `.env` file
 
 ### 4. Database Setup
 
@@ -183,11 +153,10 @@ npm run preview
 
 ## 🔐 Authentication Flow
 
-The system uses a hybrid authentication approach:
+The system uses JWT-based authentication:
 
 1. **JWT Authentication**: Primary authentication method for API access
-2. **Firebase Integration**: Optional Firebase authentication for enhanced security
-3. **Session Management**: Automatic token refresh and session validation
+2. **Session Management**: Automatic token refresh and session validation
 
 ### Authentication Endpoints
 
@@ -203,13 +172,7 @@ The system uses a hybrid authentication approach:
 
 ### Common Issues
 
-#### 1. Firebase Not Initialized
 
-**Symptoms:** Firebase-related errors in console
-**Solution:** 
-- Check Firebase environment variables
-- Ensure Firebase project is properly configured
-- Verify service account key is correct
 
 #### 2. MongoDB Connection Failed
 
@@ -264,7 +227,7 @@ AI_Court/
 ├── backend/
 │   ├── config/
 │   │   ├── database.js      # MongoDB configuration
-│   │   └── firebase.js      # Firebase Admin SDK configuration
+
 │   ├── middleware/
 │   │   └── auth.js          # Authentication middleware
 │   ├── models/
@@ -285,7 +248,7 @@ AI_Court/
 │   │   │   └── AuthContext.jsx  # Authentication context
 │   │   ├── pages/           # Page components
 │   │   ├── config/
-│   │   │   └── firebase.js  # Firebase client configuration
+
 │   │   └── main.jsx         # React entry point
 │   └── package.json
 └── README.md
@@ -364,7 +327,7 @@ For support and questions:
 
 ### Recent Fixes
 
-- ✅ Fixed Firebase initialization issues
+
 - ✅ Improved JWT token handling
 - ✅ Enhanced error handling and validation
 - ✅ Added comprehensive authentication flow

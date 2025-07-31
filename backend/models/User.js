@@ -12,10 +12,7 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: function() {
-      // Password is required only if not using Firebase
-      return !this.firebaseUid;
-    },
+    required: [true, 'Password is required'],
     minlength: [6, 'Password must be at least 6 characters long']
   },
   role: {
@@ -65,24 +62,7 @@ const userSchema = new mongoose.Schema({
     default: false
   },
   resetPasswordToken: String,
-  resetPasswordExpires: Date,
-  // Firebase fields
-  firebaseUid: {
-    type: String,
-    unique: true,
-    sparse: true,
-    trim: true
-  },
-  provider: {
-    type: String,
-    enum: ['local', 'google', 'email', 'firebase'],
-    default: 'local'
-  },
-  photoURL: {
-    type: String,
-    trim: true,
-    match: [/^https?:\/\/.+/, 'Photo URL must be a valid HTTP/HTTPS URL']
-  }
+  resetPasswordExpires: Date
 }, {
   timestamps: true
 });
@@ -90,12 +70,11 @@ const userSchema = new mongoose.Schema({
 // Create indexes for better performance
 userSchema.index({ role: 1 });
 userSchema.index({ isActive: 1 });
-userSchema.index({ provider: 1 });
 
-// Hash password before saving (only if password is provided and not using Firebase)
+// Hash password before saving
 userSchema.pre('save', async function(next) {
-  // Only hash the password if it has been modified (or is new) and not using Firebase
-  if (!this.isModified('password') || this.firebaseUid) return next();
+  // Only hash the password if it has been modified (or is new)
+  if (!this.isModified('password')) return next();
   
   try {
     // Generate a salt with cost factor 12
@@ -111,10 +90,6 @@ userSchema.pre('save', async function(next) {
 // Compare password method
 userSchema.methods.comparePassword = async function(candidatePassword) {
   try {
-    // If user is using Firebase, they don't have a password
-    if (this.firebaseUid) {
-      return false;
-    }
     return await bcrypt.compare(candidatePassword, this.password);
   } catch (error) {
     throw new Error('Password comparison failed');
@@ -135,10 +110,7 @@ userSchema.statics.findByEmail = function(email) {
   return this.findOne({ email: email.toLowerCase() });
 };
 
-// Static method to find user by Firebase UID
-userSchema.statics.findByFirebaseUid = function(firebaseUid) {
-  return this.findOne({ firebaseUid });
-};
+
 
 // Static method to find active users
 userSchema.statics.findActive = function() {
@@ -163,12 +135,6 @@ userSchema.methods.activate = function() {
   return this.save();
 };
 
-// Instance method to link Firebase account
-userSchema.methods.linkFirebase = function(firebaseUid, provider) {
-  this.firebaseUid = firebaseUid;
-  this.provider = provider;
-  this.emailVerified = true;
-  return this.save();
-};
+
 
 module.exports = mongoose.model('User', userSchema); 

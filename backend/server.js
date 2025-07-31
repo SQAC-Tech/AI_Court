@@ -7,7 +7,6 @@ require('dotenv').config();
 
 // Import configurations and routes
 const connectDB = require('./config/database');
-const { initializeFirebase, isFirebaseInitialized } = require('./config/firebase');
 const authRoutes = require('./routes/auth');
 const caseRoutes = require('./routes/cases');
 const documentRoutes = require('./routes/documents');
@@ -18,19 +17,10 @@ const PORT = process.env.PORT || 5000;
 // Connect to MongoDB
 connectDB();
 
-// Initialize Firebase Admin SDK (non-blocking)
-try {
-  initializeFirebase();
-} catch (error) {
-  console.warn('Firebase initialization failed, continuing without Firebase:', error.message);
-}
 
-// Security middleware with custom configuration for Firebase popup auth
-app.use(helmet({
-  crossOriginEmbedderPolicy: false,
-  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
-  crossOriginResourcePolicy: { policy: "cross-origin" }
-}));
+
+// Security middleware
+app.use(helmet());
 app.use(morgan('combined'));
 
 // Rate limiting
@@ -59,8 +49,7 @@ app.get('/', (req, res) => {
     message: 'AI-Court Backend API',
     version: '1.0.0',
     status: 'running',
-    timestamp: new Date().toISOString(),
-    firebase: isFirebaseInitialized() ? 'initialized' : 'not configured'
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -123,5 +112,5 @@ app.listen(PORT, () => {
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
   console.log(`🗄️  Database: MongoDB`);
-  console.log(`🔥 Firebase: ${isFirebaseInitialized() ? 'Initialized' : 'Not configured'}`);
+
 }); 

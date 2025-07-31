@@ -114,10 +114,7 @@ PORT=5001
 server: { port: 5174 }
 ```
 
-### Firebase Issues
-Firebase is optional. The system works without it. If you want to use Firebase:
 
-1. Create a Firebase project
 2. Download service account key
 3. Update environment variables
 

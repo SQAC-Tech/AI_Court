@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { verifyFirebaseToken, requireRole } = require('../middleware/auth');
+const { verifyJWT, requireRole } = require('../middleware/auth');
 
 // Get user cases
-router.get('/user', verifyFirebaseToken, requireRole(['user']), (req, res) => {
+router.get('/user', verifyJWT, requireRole(['user']), (req, res) => {
   // Mock user cases data
   const userCases = [
     {
@@ -39,7 +39,7 @@ router.get('/user', verifyFirebaseToken, requireRole(['user']), (req, res) => {
 });
 
 // Get court cases
-router.get('/court', verifyFirebaseToken, requireRole(['court']), (req, res) => {
+router.get('/court', verifyJWT, requireRole(['court']), (req, res) => {
   // Mock court cases data
   const courtCases = [
     {
@@ -81,7 +81,7 @@ router.get('/court', verifyFirebaseToken, requireRole(['court']), (req, res) => 
 });
 
 // Get case details by ID
-router.get('/:caseId', verifyFirebaseToken, (req, res) => {
+router.get('/:caseId', verifyJWT, (req, res) => {
   const { caseId } = req.params;
   
   // Mock case details
