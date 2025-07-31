@@ -1,21 +1,67 @@
-# AI-Court Legal-Tech Platform
+# AI-Court Platform
 
-A comprehensive legal-tech platform for resolving civil legal disputes using AI and virtual mediation. Built for the Coxiant hackathon to reduce court backlog in India.
+A modern legal tech platform for AI-powered dispute resolution and document management. Built with React, Node.js, and MongoDB.
 
-## 🏗️ Architecture
+## 🚀 Features
 
-- **Frontend**: React (Vite) + Tailwind CSS
-- **Backend**: Node.js/Express with Firebase Authentication
-- **ML/AI Layer**: Separate folder (handled by another teammate)
-- **Database**: MongoDB (planned)
-- **Authentication**: Firebase Auth + JWT tokens
+### Authentication & Authorization
+- JWT-based authentication with bcrypt password hashing
+- Role-based access control (User/Court)
+- Secure session management
+- Profile management and password changes
+
+### Document Management
+- Upload and manage legal documents (PDF, DOC, DOCX, TXT)
+- Document signing by court officials
+- AI-powered document analysis
+- Search and filter functionality
+- Download and preview capabilities
+
+### User Interface
+- Modern, responsive design with Tailwind CSS
+- Smooth animations with Framer Motion
+- Mobile-friendly interface
+- Role-specific dashboards
+- Real-time status updates
+
+### Security
+- JWT token authentication
+- Password hashing with bcrypt
+- Input validation and sanitization
+- CORS configuration
+- Rate limiting
+- Helmet security headers
+
+## 🛠️ Tech Stack
+
+### Frontend
+- **React 19** - UI framework
+- **Vite** - Build tool and dev server
+- **Tailwind CSS** - Utility-first CSS framework
+- **Framer Motion** - Animation library
+- **Lucide React** - Icon library
+- **Axios** - HTTP client
+- **React Router** - Client-side routing
+
+### Backend
+- **Node.js** - Runtime environment
+- **Express.js** - Web framework
+- **MongoDB** - Database
+- **Mongoose** - ODM for MongoDB
+- **JWT** - Authentication tokens
+- **bcryptjs** - Password hashing
+- **Multer** - File upload handling
+- **Express Validator** - Input validation
+- **Helmet** - Security headers
+- **CORS** - Cross-origin resource sharing
+
+## 📋 Prerequisites
+
+- Node.js (v18 or higher)
+- MongoDB (local or cloud instance)
+- npm or yarn package manager
 
 ## 🚀 Quick Start
-
-### Prerequisites
-- Node.js (v16 or higher)
-- npm or yarn
-- Firebase project
 
 ### 1. Clone the Repository
 ```bash
@@ -24,202 +70,183 @@ cd AI_Court
 ```
 
 ### 2. Backend Setup
+
 ```bash
 cd backend
+
+# Install dependencies
 npm install
+
+# Create environment file
 cp env.example .env
-# Configure your Firebase credentials in .env
+
+# Edit .env file with your configuration
+# MONGODB_URI=mongodb://localhost:27017/ai-court
+# JWT_SECRET=your-super-secret-jwt-key
+# FRONTEND_URL=http://localhost:5173
+
+# Setup demo data
+npm run setup
+
+# Start development server
 npm run dev
 ```
 
 ### 3. Frontend Setup
+
 ```bash
 cd frontend
+
+# Install dependencies
 npm install
-# Update Firebase config in src/config/firebase.js
+
+# Start development server
 npm run dev
 ```
 
 ### 4. Access the Application
+
 - Frontend: http://localhost:5173
 - Backend API: http://localhost:5000
 
-## 📋 Features
+## 👥 Demo Accounts
 
-### 🔐 Authentication & Authorization
-- **Firebase Authentication**: Email/password and Google sign-in
-- **Role-based Access**: Separate interfaces for Users and Court Officials
-- **JWT Token Management**: Secure session handling
-- **Protected Routes**: Role-specific access control
+After running the setup script, you can use these demo accounts:
 
-### 👤 User Features
-- **Landing Page**: Choose role and get started
-- **Dashboard**: Case overview, statistics, and quick actions
-- **File Dispute**: Chat-based dispute filing interface
-- **AI Suggestions**: Legal advice, IPC sections, case precedents
-- **Mediation**: Schedule and attend virtual mediations
-- **Documents**: View and manage legal documents
-- **Case History**: Track case progress with search/filter
+### User Account
+- **Email:** user@example.com
+- **Password:** password123
+- **Role:** Citizen/User
 
-### 🏛️ Court Features
-- **Dashboard**: Court case management overview
-- **Review Cases**: Review pending case submissions
-- **Schedule**: Schedule hearings and mediations
-- **Documents**: Generate legal documents and orders
-- **Calendar**: Manage court calendar and proceedings
-
-### 🔒 Security Features
-- **Document Safety**: SHA-256 hashing and AES encryption
-- **E-Signing**: Integration with DocuSign and Aadhaar eSign
-- **Rate Limiting**: API protection against abuse
-- **CORS Configuration**: Secure cross-origin requests
-
-## 🛠️ Technology Stack
-
-### Frontend
-- **React 19** - Modern UI framework
-- **Vite** - Fast build tool and dev server
-- **React Router** - Client-side routing
-- **Tailwind CSS** - Utility-first CSS framework
-- **Framer Motion** - Smooth animations
-- **Firebase** - Authentication and backend services
-- **Axios** - HTTP client for API calls
-- **Lucide React** - Beautiful icons
-
-### Backend
-- **Node.js** - JavaScript runtime
-- **Express.js** - Web framework
-- **Firebase Admin SDK** - Server-side Firebase integration
-- **JWT** - Token-based authentication
-- **Helmet** - Security headers
-- **Morgan** - HTTP request logging
-- **CORS** - Cross-origin resource sharing
-- **Rate Limiting** - API protection
+### Court Account
+- **Email:** court@example.com
+- **Password:** password123
+- **Role:** Court Official
 
 ## 📁 Project Structure
 
 ```
 AI_Court/
-├── frontend/                 # React frontend application
+├── backend/
+│   ├── config/
+│   │   ├── database.js
+│   │   └── firebase.js
+│   ├── middleware/
+│   │   └── auth.js
+│   ├── models/
+│   │   ├── User.js
+│   │   └── Document.js
+│   ├── routes/
+│   │   ├── auth.js
+│   │   ├── cases.js
+│   │   └── documents.js
+│   ├── scripts/
+│   │   └── setup-demo.js
+│   ├── server.js
+│   └── package.json
+├── frontend/
 │   ├── src/
-│   │   ├── components/      # Reusable UI components
-│   │   ├── contexts/        # React contexts (AuthContext)
-│   │   ├── pages/          # Page components
-│   │   ├── config/         # Configuration files
-│   │   └── App.jsx         # Main app with routing
-│   ├── package.json
-│   └── README.md
-├── backend/                  # Node.js/Express backend
-│   ├── server.js           # Main server file
-│   ├── package.json
-│   ├── env.example         # Environment variables template
-│   └── README.md
-├── airelatedstuff/          # ML/AI components (separate team)
-└── README.md               # This file
+│   │   ├── components/
+│   │   │   └── Navbar.jsx
+│   │   ├── contexts/
+│   │   │   └── AuthContext.jsx
+│   │   ├── pages/
+│   │   │   ├── Landing.jsx
+│   │   │   ├── Login.jsx
+│   │   │   ├── Signup.jsx
+│   │   │   ├── Documents.jsx
+│   │   │   └── ...
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   └── package.json
+└── README.md
 ```
 
-## 🔧 Configuration
+## 🔧 API Endpoints
 
-### Firebase Setup
-1. Create a Firebase project at [Firebase Console](https://console.firebase.google.com/)
-2. Enable Authentication (Email/Password and Google)
-3. Download service account key for backend
-4. Update configuration files:
-   - Frontend: `frontend/src/config/firebase.js`
-   - Backend: `backend/.env`
+### Authentication
+- `POST /api/auth/signup` - User registration
+- `POST /api/auth/login` - User login
+- `POST /api/auth/verify` - Verify JWT token
+- `GET /api/auth/profile` - Get user profile
+- `PUT /api/auth/profile` - Update user profile
+- `PUT /api/auth/change-password` - Change password
 
-### Environment Variables
-Backend (`backend/.env`):
-```env
-PORT=5000
-JWT_SECRET=your-secret-key
-FRONTEND_URL=http://localhost:5173
-FIREBASE_TYPE=service_account
-FIREBASE_PROJECT_ID=your-project-id
-# ... other Firebase credentials
-```
+### Documents
+- `POST /api/documents/upload` - Upload document
+- `GET /api/documents/my-documents` - Get user's documents
+- `GET /api/documents/all` - Get all documents (court only)
+- `GET /api/documents/:id` - Get single document
+- `GET /api/documents/:id/download` - Download document
+- `PATCH /api/documents/:id/sign` - Sign document (court only)
+- `PATCH /api/documents/:id/status` - Update document status
+- `DELETE /api/documents/:id` - Delete document
+
+## 🔒 Security Features
+
+- **JWT Authentication** - Secure token-based authentication
+- **Password Hashing** - bcrypt with salt rounds
+- **Input Validation** - Express validator for all inputs
+- **CORS Protection** - Configured for frontend domain
+- **Rate Limiting** - Prevents abuse
+- **Helmet Security** - Security headers
+- **File Upload Security** - Type and size validation
+
+## 🎨 UI/UX Features
+
+- **Responsive Design** - Works on all device sizes
+- **Dark/Light Mode** - Theme support
+- **Smooth Animations** - Framer Motion integration
+- **Loading States** - User feedback during operations
+- **Error Handling** - Graceful error messages
+- **Accessibility** - ARIA labels and keyboard navigation
 
 ## 🚀 Deployment
 
-### Frontend Deployment
-```bash
-cd frontend
-npm run build
-# Deploy dist/ folder to your hosting platform
-```
-
 ### Backend Deployment
-```bash
-cd backend
-npm install --production
-# Deploy to your preferred platform (Heroku, Railway, etc.)
-```
+1. Set up MongoDB database (local or cloud)
+2. Configure environment variables
+3. Install dependencies: `npm install`
+4. Run setup: `npm run setup`
+5. Start server: `npm start`
 
-## 🔄 Development Workflow
-
-1. **Feature Development**:
-   - Create feature branch
-   - Implement frontend and backend changes
-   - Test authentication and role-based access
-   - Update documentation
-
-2. **Testing**:
-   - Test user flows (signup → login → dashboard)
-   - Test role-based access control
-   - Test mobile responsiveness
-   - Test API endpoints
-
-3. **Deployment**:
-   - Build frontend for production
-   - Deploy backend with environment variables
-   - Update Firebase configuration
-   - Test live deployment
+### Frontend Deployment
+1. Install dependencies: `npm install`
+2. Build for production: `npm run build`
+3. Deploy to your preferred hosting service
 
 ## 🤝 Contributing
 
-1. **Code Style**: Follow existing patterns
-2. **Authentication**: Always use role-based protection
-3. **UI/UX**: Maintain legal-themed, trustworthy design
-4. **Testing**: Test both user and court flows
-5. **Documentation**: Update README files
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
-## 📱 Mobile Support
+## 📝 License
 
-- Responsive design for all screen sizes
-- Touch-friendly interface
-- Mobile-optimized navigation
-- Progressive Web App features
+This project is licensed under the MIT License.
 
-## 🔐 Security Considerations
+## 🆘 Support
 
-- Firebase Authentication for secure user management
-- JWT tokens for session handling
-- Rate limiting on API endpoints
-- CORS configuration for secure requests
-- Environment variable protection
-- Input validation and sanitization
+For support and questions:
+- Create an issue in the repository
+- Contact the development team
+- Check the documentation
 
-## 🎯 Future Enhancements
+## 🔮 Future Enhancements
 
-- **AI Integration**: Connect with ML team's models
-- **Database**: MongoDB integration for persistent data
-- **Real-time**: WebSocket support for live updates
-- **Notifications**: Push notifications for case updates
-- **Analytics**: Case tracking and analytics dashboard
-- **Multi-language**: Support for regional languages
-
-## 📞 Support
-
-For technical support or questions:
-- Check the individual README files in `frontend/` and `backend/`
-- Review Firebase documentation for authentication setup
-- Test with the provided mock data
-
-## 📄 License
-
-MIT License - see LICENSE file for details.
+- [ ] Real-time notifications
+- [ ] Advanced AI document analysis
+- [ ] Video conferencing integration
+- [ ] Mobile app development
+- [ ] Advanced analytics dashboard
+- [ ] Multi-language support
+- [ ] Advanced search and filtering
+- [ ] Document versioning
+- [ ] E-signature integration
+- [ ] Payment processing
 
 ---
 
-**Built for Coxiant Hackathon** 🚀
-*Reducing court backlog through AI-powered legal dispute resolution* 
+**Built with ❤️ by the AI-Court Team** 

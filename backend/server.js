@@ -6,12 +6,17 @@ const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 // Import configurations and routes
+const connectDB = require('./config/database');
 const { initializeFirebase } = require('./config/firebase');
 const authRoutes = require('./routes/auth');
 const caseRoutes = require('./routes/cases');
+const documentRoutes = require('./routes/documents');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Connect to MongoDB
+connectDB();
 
 // Initialize Firebase Admin SDK
 initializeFirebase();
@@ -51,6 +56,7 @@ app.get('/', (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/cases', caseRoutes);
+app.use('/api/documents', documentRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
@@ -64,6 +70,21 @@ app.use('*', (req, res) => {
 app.use((error, req, res, next) => {
   console.error('Global error handler:', error);
   
+  // Handle multer errors
+  if (error.code === 'LIMIT_FILE_SIZE') {
+    return res.status(400).json({
+      error: 'File too large',
+      message: 'File size must be less than 10MB'
+    });
+  }
+  
+  if (error.message && error.message.includes('Invalid file type')) {
+    return res.status(400).json({
+      error: 'Invalid file type',
+      message: error.message
+    });
+  }
+  
   res.status(error.status || 500).json({
     error: 'Internal server error',
     message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
@@ -75,4 +96,5 @@ app.listen(PORT, () => {
   console.log(`🚀 AI-Court Backend Server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+  console.log(`🗄️  Database: MongoDB`);
 }); 

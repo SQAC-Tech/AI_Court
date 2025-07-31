@@ -1,107 +1,176 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Download, Eye, FileSignature, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { 
+  FileText, 
+  Download, 
+  Eye, 
+  FileSignature, 
+  CheckCircle, 
+  Clock, 
+  AlertCircle, 
+  Upload, 
+  Trash2, 
+  Plus,
+  Search,
+  Filter,
+  File,
+  FileImage,
+  FileVideo,
+  FileArchive
+} from 'lucide-react';
+import axios from 'axios';
 
 const Documents = () => {
+  const [documents, setDocuments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isSigning, setIsSigning] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [uploadForm, setUploadForm] = useState({
+    file: null,
+    description: '',
+    tags: ''
+  });
 
-  const documents = [
-    {
-      id: 1,
-      name: 'Settlement Agreement',
-      type: 'Legal Document',
-      status: 'Generated',
-      date: '2024-07-30',
-      size: '2.3 MB',
-      description: 'Comprehensive settlement agreement between parties in the property dispute case.',
-      signed: false,
-      generated: true
-    },
-    {
-      id: 2,
-      name: 'Legal Notice',
-      type: 'Legal Document',
-      status: 'Pending',
-      date: '2024-07-30',
-      size: '1.8 MB',
-      description: 'Formal legal notice to be served to the opposing party.',
-      signed: false,
-      generated: false
-    },
-    {
-      id: 3,
-      name: 'Affidavit of Evidence',
-      type: 'Legal Document',
-      status: 'Generated',
-      date: '2024-07-29',
-      size: '3.1 MB',
-      description: 'Sworn statement of facts and evidence in support of the case.',
-      signed: true,
-      generated: true
-    },
-    {
-      id: 4,
-      name: 'Mediation Agreement',
-      type: 'Legal Document',
-      status: 'Pending',
-      date: '2024-07-30',
-      size: '1.5 MB',
-      description: 'Agreement outlining terms and conditions for mediation process.',
-      signed: false,
-      generated: false
-    },
-    {
-      id: 5,
-      name: 'Power of Attorney',
-      type: 'Legal Document',
-      status: 'Generated',
-      date: '2024-07-28',
-      size: '2.7 MB',
-      description: 'Authorization document for legal representation.',
-      signed: false,
-      generated: true
+  // Fetch documents on component mount
+  useEffect(() => {
+    fetchDocuments();
+  }, []);
+
+  const fetchDocuments = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get('/documents/my-documents');
+      setDocuments(response.data.documents);
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+    } finally {
+      setLoading(false);
     }
-  ];
-
-  const handleGenerate = (documentId) => {
-    setIsGenerating(true);
-    // Simulate document generation
-    setTimeout(() => {
-      const updatedDocs = documents.map(doc => 
-        doc.id === documentId ? { ...doc, generated: true, status: 'Generated' } : doc
-      );
-      setIsGenerating(false);
-    }, 2000);
   };
 
-  const handleSign = (documentId) => {
-    setIsSigning(true);
-    // Simulate DocuSign process
-    setTimeout(() => {
-      const updatedDocs = documents.map(doc => 
-        doc.id === documentId ? { ...doc, signed: true } : doc
-      );
-      setIsSigning(false);
-    }, 3000);
+  const handleFileUpload = async (e) => {
+    e.preventDefault();
+    
+    if (!uploadForm.file) {
+      alert('Please select a file');
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const formData = new FormData();
+      formData.append('document', uploadForm.file);
+      formData.append('description', uploadForm.description);
+      formData.append('tags', uploadForm.tags);
+
+      await axios.post('/documents/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      setShowUploadModal(false);
+      setUploadForm({ file: null, description: '', tags: '' });
+      fetchDocuments();
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      alert(error.response?.data?.message || 'Failed to upload document');
+    } finally {
+      setUploading(false);
+    }
   };
 
-  const handlePreview = (document) => {
-    setSelectedDocument(document);
+  const handleDownload = async (documentId, filename) => {
+    try {
+      const response = await axios.get(`/documents/${documentId}/download`, {
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      alert('Failed to download document');
+    }
   };
 
-  const getStatusColor = (status, signed) => {
-    if (signed) return 'bg-green-100 text-green-800';
-    if (status === 'Generated') return 'bg-blue-100 text-blue-800';
-    return 'bg-yellow-100 text-yellow-800';
+  const handleDelete = async (documentId) => {
+    if (!confirm('Are you sure you want to delete this document?')) return;
+
+    try {
+      await axios.delete(`/documents/${documentId}`);
+      fetchDocuments();
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      alert('Failed to delete document');
+    }
   };
 
-  const getStatusText = (status, signed) => {
-    if (signed) return 'Signed';
-    if (status === 'Generated') return 'Generated';
-    return 'Pending';
+  const getFileIcon = (fileType) => {
+    switch (fileType) {
+      case 'pdf':
+        return <FileText className="h-5 w-5 text-red-500" />;
+      case 'doc':
+      case 'docx':
+        return <FileText className="h-5 w-5 text-blue-500" />;
+      case 'txt':
+        return <FileText className="h-5 w-5 text-gray-500" />;
+      default:
+        return <File className="h-5 w-5 text-gray-500" />;
+    }
   };
+
+  const getStatusColor = (status, isSigned) => {
+    if (isSigned) return 'bg-green-100 text-green-800';
+    switch (status) {
+      case 'approved':
+        return 'bg-blue-100 text-blue-800';
+      case 'rejected':
+        return 'bg-red-100 text-red-800';
+      case 'reviewed':
+        return 'bg-yellow-100 text-yellow-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const filteredDocuments = documents.filter(doc => {
+    const matchesSearch = doc.originalName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         doc.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = filterStatus === 'all' || 
+                         (filterStatus === 'signed' && doc.isSigned) ||
+                         (filterStatus === 'unsigned' && !doc.isSigned) ||
+                         (filterStatus === 'pending' && doc.status === 'pending');
+    
+    return matchesSearch && matchesFilter;
+  });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading documents...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -112,11 +181,56 @@ const Documents = () => {
           transition={{ duration: 0.6 }}
           className="mb-8"
         >
-          <div className="flex items-center mb-4">
-            <FileText className="h-8 w-8 text-blue-600 mr-3" />
-            <h1 className="text-3xl font-bold text-gray-900">Documents & E-Sign</h1>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <FileText className="h-8 w-8 text-blue-600 mr-3" />
+              <h1 className="text-3xl font-bold text-gray-900">Documents</h1>
+            </div>
+            <motion.button
+              onClick={() => setShowUploadModal(true)}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              Upload Document
+            </motion.button>
           </div>
-          <p className="text-gray-600">Generate and electronically sign legal documents</p>
+          <p className="text-gray-600">Manage and track your legal documents</p>
+        </motion.div>
+
+        {/* Search and Filter */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="bg-white rounded-lg shadow-sm p-6 mb-6"
+        >
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search documents..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Filter className="h-5 w-5 text-gray-400" />
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="all">All Documents</option>
+                <option value="signed">Signed</option>
+                <option value="unsigned">Unsigned</option>
+                <option value="pending">Pending</option>
+              </select>
+            </div>
+          </div>
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -125,101 +239,84 @@ const Documents = () => {
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
               className="bg-white rounded-lg shadow-lg p-6"
             >
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Legal Documents</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">
+                My Documents ({filteredDocuments.length})
+              </h2>
 
-              <div className="space-y-4">
-                {documents.map((doc) => (
-                  <motion.div
-                    key={doc.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4 }}
-                    className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center mb-2">
-                          <FileText className="h-5 w-5 text-blue-600 mr-2" />
-                          <h3 className="font-semibold text-gray-900">{doc.name}</h3>
+              {filteredDocuments.length === 0 ? (
+                <div className="text-center py-12">
+                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">No documents found</p>
+                  <p className="text-sm text-gray-400">Upload your first document to get started</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {filteredDocuments.map((doc) => (
+                    <motion.div
+                      key={doc._id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center mb-2">
+                            {getFileIcon(doc.fileType)}
+                            <h3 className="font-semibold text-gray-900 ml-2">{doc.originalName}</h3>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-2">{doc.description}</p>
+                          <div className="flex items-center space-x-4 text-xs text-gray-500">
+                            <span>{doc.fileType.toUpperCase()}</span>
+                            <span>{new Date(doc.createdAt).toLocaleDateString()}</span>
+                            <span>{formatFileSize(doc.fileSize)}</span>
+                          </div>
                         </div>
-                        <p className="text-sm text-gray-600 mb-2">{doc.description}</p>
-                        <div className="flex items-center space-x-4 text-xs text-gray-500">
-                          <span>{doc.type}</span>
-                          <span>{doc.date}</span>
-                          <span>{doc.size}</span>
+                        <div className="ml-4 flex flex-col items-end space-y-2">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(doc.status, doc.isSigned)}`}>
+                            {doc.isSigned ? 'Signed' : doc.status}
+                          </span>
+                          {doc.isSigned && doc.signedBy && (
+                            <span className="text-xs text-gray-500">
+                              by {doc.signedBy.courtName}
+                            </span>
+                          )}
                         </div>
                       </div>
-                      <div className="ml-4">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(doc.status, doc.signed)}`}>
-                          {getStatusText(doc.status, doc.signed)}
-                        </span>
-                      </div>
-                    </div>
 
-                    <div className="flex items-center space-x-3">
-                      {!doc.generated ? (
+                      <div className="flex items-center space-x-3">
                         <button
-                          onClick={() => handleGenerate(doc.id)}
-                          disabled={isGenerating}
-                          className="flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                          onClick={() => handleDownload(doc._id, doc.originalName)}
+                          className="flex items-center px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
                         >
-                          {isGenerating ? (
-                            <>
-                              <Clock className="h-4 w-4 mr-1 animate-spin" />
-                              Generating...
-                            </>
-                          ) : (
-                            <>
-                              <FileText className="h-4 w-4 mr-1" />
-                              Generate
-                            </>
-                          )}
+                          <Download className="h-4 w-4 mr-1" />
+                          Download
                         </button>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() => handlePreview(doc)}
-                            className="flex items-center px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            Preview
-                          </button>
-                          <button className="flex items-center px-3 py-2 bg-green-100 text-green-700 text-sm font-medium rounded-lg hover:bg-green-200 transition-colors">
-                            <Download className="h-4 w-4 mr-1" />
-                            Download
-                          </button>
-                          {!doc.signed && (
-                            <button
-                              onClick={() => handleSign(doc.id)}
-                              disabled={isSigning}
-                              className="flex items-center px-3 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                            >
-                              {isSigning ? (
-                                <>
-                                  <Clock className="h-4 w-4 mr-1 animate-spin" />
-                                  Signing...
-                                </>
-                              ) : (
-                                <>
-                                  <FileSignature className="h-4 w-4 mr-1" />
-                                  E-Sign
-                                </>
-                              )}
-                            </button>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+                        <button
+                          onClick={() => setSelectedDocument(doc)}
+                          className="flex items-center px-3 py-2 bg-blue-100 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-200 transition-colors"
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </button>
+                        <button
+                          onClick={() => handleDelete(doc._id)}
+                          className="flex items-center px-3 py-2 bg-red-100 text-red-700 text-sm font-medium rounded-lg hover:bg-red-200 transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Delete
+                        </button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
             </motion.div>
           </div>
 
-          {/* Document Preview */}
+          {/* Document Details */}
           <div className="lg:col-span-1 space-y-6">
             {selectedDocument && (
               <motion.div
@@ -229,7 +326,7 @@ const Documents = () => {
                 className="bg-white rounded-lg shadow-lg p-6"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Document Preview</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Document Details</h3>
                   <button
                     onClick={() => setSelectedDocument(null)}
                     className="text-gray-400 hover:text-gray-600"
@@ -238,108 +335,144 @@ const Documents = () => {
                   </button>
                 </div>
                 
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div>
-                    <h4 className="font-medium text-gray-900">{selectedDocument.name}</h4>
+                    <h4 className="font-medium text-gray-900">{selectedDocument.originalName}</h4>
                     <p className="text-sm text-gray-600">{selectedDocument.description}</p>
                   </div>
                   
-                  <div className="bg-gray-50 rounded-lg p-4 h-64 flex items-center justify-center">
-                    <div className="text-center">
-                      <FileText className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-500">PDF Preview</p>
-                      <p className="text-xs text-gray-400">Document content would appear here</p>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center justify-center h-32">
+                      {getFileIcon(selectedDocument.fileType)}
+                      <span className="ml-2 text-sm text-gray-500">Document Preview</span>
                     </div>
                   </div>
                   
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500">Size: {selectedDocument.size}</span>
-                    <span className="text-gray-500">Date: {selectedDocument.date}</span>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">File Type:</span>
+                      <span className="font-medium">{selectedDocument.fileType.toUpperCase()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Size:</span>
+                      <span className="font-medium">{formatFileSize(selectedDocument.fileSize)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Uploaded:</span>
+                      <span className="font-medium">{new Date(selectedDocument.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Status:</span>
+                      <span className={`font-medium ${selectedDocument.isSigned ? 'text-green-600' : 'text-blue-600'}`}>
+                        {selectedDocument.isSigned ? 'Signed' : selectedDocument.status}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </motion.div>
             )}
 
-            {/* DocuSign Integration */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="bg-white rounded-lg shadow-lg p-6"
-            >
-              <div className="flex items-center mb-4">
-                <FileSignature className="h-5 w-5 text-purple-600 mr-2" />
-                <h3 className="text-lg font-semibold text-gray-900">DocuSign Integration</h3>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="flex items-center p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
-                  <div>
-                    <p className="text-sm font-medium text-green-800">Connected</p>
-                    <p className="text-xs text-green-600">DocuSign account linked</p>
+            {/* Upload Modal */}
+            {showUploadModal && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                onClick={() => setShowUploadModal(false)}
+              >
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="bg-white rounded-lg p-6 w-full max-w-md mx-4"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Upload Document</h3>
+                    <button
+                      onClick={() => setShowUploadModal(false)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      ×
+                    </button>
                   </div>
-                </div>
-                
-                <div className="text-sm text-gray-600 space-y-2">
-                  <p><strong>Features:</strong></p>
-                  <ul className="space-y-1 text-xs">
-                    <li>• Secure electronic signatures</li>
-                    <li>• Legally binding documents</li>
-                    <li>• Audit trail and compliance</li>
-                    <li>• Multi-party signing</li>
-                  </ul>
-                </div>
-              </div>
-            </motion.div>
 
-            {/* Document Status */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.6 }}
-              className="bg-white rounded-lg shadow-lg p-6"
-            >
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Document Status</h3>
-              
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Generated</span>
-                  <span className="text-sm font-medium text-blue-600">
-                    {documents.filter(d => d.generated).length}/{documents.length}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Signed</span>
-                  <span className="text-sm font-medium text-green-600">
-                    {documents.filter(d => d.signed).length}/{documents.length}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Pending</span>
-                  <span className="text-sm font-medium text-yellow-600">
-                    {documents.filter(d => !d.generated).length}
-                  </span>
-                </div>
-              </div>
-            </motion.div>
+                  <form onSubmit={handleFileUpload} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Select File *
+                      </label>
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx,.txt"
+                        onChange={(e) => setUploadForm({ ...uploadForm, file: e.target.files[0] })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Description
+                      </label>
+                      <textarea
+                        value={uploadForm.description}
+                        onChange={(e) => setUploadForm({ ...uploadForm, description: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        rows="3"
+                        placeholder="Describe the document..."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Tags
+                      </label>
+                      <input
+                        type="text"
+                        value={uploadForm.tags}
+                        onChange={(e) => setUploadForm({ ...uploadForm, tags: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="legal, contract, agreement..."
+                      />
+                    </div>
+
+                    <div className="flex space-x-3">
+                      <button
+                        type="button"
+                        onClick={() => setShowUploadModal(false)}
+                        className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={uploading}
+                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {uploading ? 'Uploading...' : 'Upload'}
+                      </button>
+                    </div>
+                  </form>
+                </motion.div>
+              </motion.div>
+            )}
 
             {/* Information */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.8 }}
+              transition={{ duration: 0.6, delay: 0.6 }}
               className="bg-blue-50 border border-blue-200 rounded-lg p-6"
             >
               <div className="flex items-start">
                 <AlertCircle className="h-5 w-5 text-blue-600 mr-2 mt-0.5" />
                 <div className="text-sm text-blue-800">
-                  <h4 className="font-semibold mb-2">Important Notes</h4>
+                  <h4 className="font-semibold mb-2">Document Guidelines</h4>
                   <ul className="space-y-1 text-xs">
-                    <li>• All documents are legally binding</li>
-                    <li>• E-signatures are court-admissible</li>
-                    <li>• Keep copies for your records</li>
-                    <li>• Contact support for questions</li>
+                    <li>• Supported formats: PDF, DOC, DOCX, TXT</li>
+                    <li>• Maximum file size: 10MB</li>
+                    <li>• Documents are securely stored</li>
+                    <li>• Court officials can sign documents</li>
                   </ul>
                 </div>
               </div>
