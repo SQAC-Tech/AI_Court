@@ -26,10 +26,10 @@ const Navbar = () => {
     } else if (userRole === 'court') {
       return [
         { name: 'Dashboard', path: '/court/dashboard' },
-        { name: 'Review Cases', path: '/court/review-cases' },
-        { name: 'Schedule', path: '/court/schedule' },
+        { name: 'Case History', path: '/court/case-history' },
         { name: 'Documents', path: '/court/documents' },
-        { name: 'Calendar', path: '/court/calendar' },
+        { name: 'Legal Documents', path: '/court/legal-documents' },
+        { name: 'AI Assistant', path: '/court/chatbot' },
       ];
     }
     return [];
