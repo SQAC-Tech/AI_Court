@@ -6,20 +6,271 @@ const User = require('../models/User');
 
 // Validation middleware
 const validateSignup = [
-  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-  body('displayName').notEmpty().trim().withMessage('Display name is required'),
-  body('role').isIn(['user', 'court']).withMessage('Role must be user or court'),
-  body('phone').optional().isMobilePhone().withMessage('Valid phone number is required'),
-  body('address').optional().trim(),
-  body('court').optional().trim(),
-  body('designation').optional().trim()
+  body('email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Valid email is required')
+    .custom(async (value) => {
+      const existingUser = await User.findByEmail(value);
+      if (existingUser) {
+        throw new Error('An account with this email already exists');
+      }
+      return true;
+    }),
+  body('password')
+    .isLength({ min: 6 })
+    .withMessage('Password must be at least 6 characters')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
+  body('displayName')
+    .notEmpty()
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage('Display name must be between 2 and 50 characters'),
+  body('role')
+    .isIn(['user', 'court'])
+    .withMessage('Role must be user or court'),
+  body('phone')
+    .optional()
+    .isMobilePhone()
+    .withMessage('Valid phone number is required'),
+  body('address')
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage('Address cannot exceed 500 characters'),
+  body('court')
+    .optional()
+    .trim()
+    .isLength({ max: 200 })
+    .withMessage('Court name cannot exceed 200 characters'),
+  body('designation')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Designation cannot exceed 100 characters')
 ];
 
 const validateLogin = [
-  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
-  body('password').notEmpty().withMessage('Password is required')
+  body('email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Valid email is required'),
+  body('password')
+    .notEmpty()
+    .withMessage('Password is required')
 ];
+
+// Firebase authentication routes
+const validateFirebaseAuth = [
+  body('email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Valid email is required'),
+  body('firebaseUid')
+    .notEmpty()
+    .withMessage('Firebase UID is required'),
+  body('provider')
+    .isIn(['google', 'email', 'firebase'])
+    .withMessage('Provider must be google, email, or firebase')
+];
+
+// Firebase login
+router.post('/firebase-login', validateFirebaseAuth, async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        message: 'Please check your input',
+        details: errors.array()
+      });
+    }
+
+    const { email, firebaseUid, provider } = req.body;
+
+    // Find user by Firebase UID or email
+    let user = await User.findOne({ 
+      $or: [
+        { firebaseUid },
+        { email: email.toLowerCase() }
+      ]
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        error: 'User not found',
+        message: 'No account found with this Firebase account'
+      });
+    }
+
+    // Check if user is active
+    if (!user.isActive) {
+      return res.status(401).json({
+        error: 'Account disabled',
+        message: 'Your account has been disabled. Please contact support.'
+      });
+    }
+
+    // Update Firebase UID if not set
+    if (!user.firebaseUid) {
+      user.firebaseUid = firebaseUid;
+      user.provider = provider;
+      await user.save();
+    }
+
+    // Update last login
+    await user.updateLastLogin();
+
+    // Generate JWT token
+    const token = generateToken(user._id, user.email, user.role);
+
+    res.json({
+      message: 'Firebase login successful',
+      user: user.toJSON(),
+      token
+    });
+
+  } catch (error) {
+    console.error('Firebase login error:', error);
+    res.status(500).json({
+      error: 'Server error',
+      message: 'Failed to authenticate with Firebase'
+    });
+  }
+});
+
+// Firebase signup
+router.post('/firebase-signup', validateFirebaseAuth, [
+  body('displayName')
+    .notEmpty()
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage('Display name must be between 2 and 50 characters'),
+  body('role')
+    .optional()
+    .isIn(['user', 'court'])
+    .withMessage('Role must be user or court'),
+  body('phone')
+    .optional()
+    .isMobilePhone()
+    .withMessage('Valid phone number is required'),
+  body('address')
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage('Address cannot exceed 500 characters'),
+  body('court')
+    .optional()
+    .trim()
+    .isLength({ max: 200 })
+    .withMessage('Court name cannot exceed 200 characters'),
+  body('designation')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Designation cannot exceed 100 characters'),
+  body('photoURL')
+    .optional()
+    .isURL()
+    .withMessage('Photo URL must be a valid URL')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        message: 'Please check your input',
+        details: errors.array()
+      });
+    }
+
+    const { 
+      email, 
+      firebaseUid, 
+      provider, 
+      displayName, 
+      role = 'user',
+      phone, 
+      address, 
+      court, 
+      designation,
+      photoURL 
+    } = req.body;
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ 
+      $or: [
+        { firebaseUid },
+        { email: email.toLowerCase() }
+      ]
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        error: 'User already exists',
+        message: 'An account with this email or Firebase account already exists'
+      });
+    }
+
+    // Create new user
+    const user = new User({
+      email,
+      firebaseUid,
+      provider,
+      displayName,
+      role,
+      phone,
+      address,
+      court,
+      designation,
+      photoURL,
+      emailVerified: true, // Firebase users are pre-verified
+      isActive: true
+    });
+
+    await user.save();
+
+    // Generate JWT token
+    const token = generateToken(user._id, user.email, user.role);
+
+    res.status(201).json({
+      message: 'Firebase user created successfully',
+      user: user.toJSON(),
+      token
+    });
+
+  } catch (error) {
+    console.error('Firebase signup error:', error);
+    
+    // Handle MongoDB duplicate key error
+    if (error.code === 11000) {
+      return res.status(400).json({
+        error: 'User already exists',
+        message: 'An account with this email or Firebase account already exists'
+      });
+    }
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(err => ({
+        field: err.path,
+        message: err.message
+      }));
+      
+      return res.status(400).json({
+        error: 'Validation failed',
+        message: 'Please check your input',
+        details: validationErrors
+      });
+    }
+    
+    res.status(500).json({
+      error: 'Server error',
+      message: 'Failed to create Firebase user account'
+    });
+  }
+});
 
 // Sign up endpoint
 router.post('/signup', validateSignup, async (req, res) => {
@@ -35,15 +286,6 @@ router.post('/signup', validateSignup, async (req, res) => {
     }
 
     const { email, password, displayName, role, phone, address, court, designation } = req.body;
-
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({
-        error: 'User already exists',
-        message: 'An account with this email already exists'
-      });
-    }
 
     // Create new user
     const user = new User({
@@ -70,6 +312,29 @@ router.post('/signup', validateSignup, async (req, res) => {
 
   } catch (error) {
     console.error('Signup error:', error);
+    
+    // Handle MongoDB duplicate key error
+    if (error.code === 11000) {
+      return res.status(400).json({
+        error: 'User already exists',
+        message: 'An account with this email already exists'
+      });
+    }
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(err => ({
+        field: err.path,
+        message: err.message
+      }));
+      
+      return res.status(400).json({
+        error: 'Validation failed',
+        message: 'Please check your input',
+        details: validationErrors
+      });
+    }
+    
     res.status(500).json({
       error: 'Server error',
       message: 'Failed to create user account'
@@ -93,7 +358,7 @@ router.post('/login', validateLogin, async (req, res) => {
     const { email, password } = req.body;
 
     // Find user by email
-    const user = await User.findOne({ email });
+    const user = await User.findByEmail(email);
     if (!user) {
       return res.status(401).json({
         error: 'Invalid credentials',
@@ -105,7 +370,7 @@ router.post('/login', validateLogin, async (req, res) => {
     if (!user.isActive) {
       return res.status(401).json({
         error: 'Account disabled',
-        message: 'Your account has been disabled'
+        message: 'Your account has been disabled. Please contact support.'
       });
     }
 
@@ -119,8 +384,7 @@ router.post('/login', validateLogin, async (req, res) => {
     }
 
     // Update last login
-    user.lastLogin = new Date();
-    await user.save();
+    await user.updateLastLogin();
 
     // Generate JWT token
     const token = generateToken(user._id, user.email, user.role);
@@ -157,11 +421,30 @@ router.get('/profile', verifyJWT, async (req, res) => {
 
 // Update user profile
 router.put('/profile', verifyJWT, [
-  body('displayName').optional().trim(),
-  body('phone').optional().isMobilePhone().withMessage('Valid phone number is required'),
-  body('address').optional().trim(),
-  body('court').optional().trim(),
-  body('designation').optional().trim()
+  body('displayName')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage('Display name must be between 2 and 50 characters'),
+  body('phone')
+    .optional()
+    .isMobilePhone()
+    .withMessage('Valid phone number is required'),
+  body('address')
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage('Address cannot exceed 500 characters'),
+  body('court')
+    .optional()
+    .trim()
+    .isLength({ max: 200 })
+    .withMessage('Court name cannot exceed 200 characters'),
+  body('designation')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Designation cannot exceed 100 characters')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -188,6 +471,13 @@ router.put('/profile', verifyJWT, [
       { new: true, runValidators: true }
     ).select('-password');
 
+    if (!updatedUser) {
+      return res.status(404).json({
+        error: 'User not found',
+        message: 'User account not found'
+      });
+    }
+
     res.json({
       message: 'Profile updated successfully',
       user: updatedUser
@@ -195,6 +485,20 @@ router.put('/profile', verifyJWT, [
 
   } catch (error) {
     console.error('Profile update error:', error);
+    
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(err => ({
+        field: err.path,
+        message: err.message
+      }));
+      
+      return res.status(400).json({
+        error: 'Validation failed',
+        message: 'Please check your input',
+        details: validationErrors
+      });
+    }
+    
     res.status(500).json({
       error: 'Server error',
       message: 'Failed to update profile'
@@ -204,8 +508,14 @@ router.put('/profile', verifyJWT, [
 
 // Change password
 router.put('/change-password', verifyJWT, [
-  body('currentPassword').notEmpty().withMessage('Current password is required'),
-  body('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters')
+  body('currentPassword')
+    .notEmpty()
+    .withMessage('Current password is required'),
+  body('newPassword')
+    .isLength({ min: 6 })
+    .withMessage('New password must be at least 6 characters')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+    .withMessage('New password must contain at least one uppercase letter, one lowercase letter, and one number')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -221,6 +531,12 @@ router.put('/change-password', verifyJWT, [
 
     // Get user with password
     const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({
+        error: 'User not found',
+        message: 'User account not found'
+      });
+    }
     
     // Verify current password
     const isCurrentPasswordValid = await user.comparePassword(currentPassword);
@@ -253,6 +569,13 @@ router.post('/verify', verifyJWT, (req, res) => {
   res.json({ 
     user: req.user,
     message: 'Token verified successfully' 
+  });
+});
+
+// Logout endpoint (client-side token removal)
+router.post('/logout', verifyJWT, (req, res) => {
+  res.json({ 
+    message: 'Logged out successfully' 
   });
 });
 
