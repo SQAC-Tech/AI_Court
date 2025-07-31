@@ -7,6 +7,10 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import UserDashboard from './pages/UserDashboard';
 import CourtDashboard from './pages/CourtDashboard';
+import CourtCaseHistory from './pages/CourtCaseHistory';
+import CourtDocuments from './pages/CourtDocuments';
+import CourtLegalDocuments from './pages/CourtLegalDocuments';
+import CourtChatbot from './pages/CourtChatbot';
 import Home from './pages/Home';
 import FileDispute from './pages/FileDispute';
 import AISuggestions from './pages/AISuggestions';
@@ -99,6 +103,38 @@ function AppContent() {
             element={
               <ProtectedRoute allowedRoles={['court']}>
                 <CourtDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/court/case-history" 
+            element={
+              <ProtectedRoute allowedRoles={['court']}>
+                <CourtCaseHistory />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/court/documents" 
+            element={
+              <ProtectedRoute allowedRoles={['court']}>
+                <CourtDocuments />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/court/legal-documents" 
+            element={
+              <ProtectedRoute allowedRoles={['court']}>
+                <CourtLegalDocuments />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/court/chatbot/:caseId?" 
+            element={
+              <ProtectedRoute allowedRoles={['court']}>
+                <CourtChatbot />
               </ProtectedRoute>
             } 
           />

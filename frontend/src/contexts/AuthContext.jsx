@@ -28,9 +28,21 @@ export const AuthProvider = ({ children }) => {
   // Backend API base URL
   const API_BASE_URL = 'http://localhost:5000/api';
 
+  // Check if Firebase is properly configured
+  const isFirebaseConfigured = auth && typeof auth.onAuthStateChanged === 'function';
+
   // Sign up function
   const signup = async (email, password, role) => {
     try {
+      if (!isFirebaseConfigured) {
+        // Demo mode - simulate successful signup
+        const demoUser = { uid: 'demo-user-id', email };
+        setCurrentUser(demoUser);
+        localStorage.setItem('userRole', role);
+        setUserRole(role);
+        return demoUser;
+      }
+      
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
@@ -47,6 +59,15 @@ export const AuthProvider = ({ children }) => {
   // Sign in function
   const signin = async (email, password, role) => {
     try {
+      if (!isFirebaseConfigured) {
+        // Demo mode - simulate successful signin
+        const demoUser = { uid: 'demo-user-id', email };
+        setCurrentUser(demoUser);
+        localStorage.setItem('userRole', role);
+        setUserRole(role);
+        return demoUser;
+      }
+      
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
@@ -63,6 +84,15 @@ export const AuthProvider = ({ children }) => {
   // Google sign in
   const signInWithGoogle = async (role) => {
     try {
+      if (!isFirebaseConfigured) {
+        // Demo mode - simulate successful Google signin
+        const demoUser = { uid: 'demo-google-user-id', email: 'demo@example.com' };
+        setCurrentUser(demoUser);
+        localStorage.setItem('userRole', role);
+        setUserRole(role);
+        return demoUser;
+      }
+      
       const provider = new GoogleAuthProvider();
       const userCredential = await signInWithPopup(auth, provider);
       const user = userCredential.user;
@@ -81,12 +111,21 @@ export const AuthProvider = ({ children }) => {
   const signout = () => {
     localStorage.removeItem('userRole');
     setUserRole(null);
-    return signOut(auth);
+    setCurrentUser(null);
+    
+    if (isFirebaseConfigured) {
+      return signOut(auth);
+    }
+    return Promise.resolve();
   };
 
   // Get user profile from backend
   const getUserProfile = async () => {
     try {
+      if (!isFirebaseConfigured) {
+        return { name: 'Demo User', email: 'demo@example.com' };
+      }
+      
       const token = await currentUser?.getIdToken();
       const role = localStorage.getItem('userRole');
       
@@ -108,6 +147,10 @@ export const AuthProvider = ({ children }) => {
   // Verify token with backend
   const verifyToken = async () => {
     try {
+      if (!isFirebaseConfigured) {
+        return { valid: true, role: localStorage.getItem('userRole') };
+      }
+      
       const token = await currentUser?.getIdToken();
       if (!token) return false;
 
@@ -125,6 +168,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
+    if (!isFirebaseConfigured) {
+      // Demo mode - set loading to false immediately
+      setLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       
