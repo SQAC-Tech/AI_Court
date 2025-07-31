@@ -1,21 +1,41 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Scale } from 'lucide-react';
+import { Menu, X, Scale, User, LogOut, Settings } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAuth } from '../contexts/AuthContext';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const location = useLocation();
+  const { currentUser, userRole, signout } = useAuth();
 
-  const navItems = [
-    { name: 'Home', path: '/' },
-    { name: 'File Dispute', path: '/file-dispute' },
-    { name: 'AI Suggestions', path: '/ai-suggestions' },
-    { name: 'Mediation', path: '/mediation' },
-    { name: 'Documents', path: '/documents' },
-    { name: 'Case History', path: '/case-history' },
-  ];
+  // Navigation items based on user role
+  const getNavItems = () => {
+    if (!currentUser) return [];
+    
+    if (userRole === 'user') {
+      return [
+        { name: 'Dashboard', path: '/user/dashboard' },
+        { name: 'File Dispute', path: '/user/file-dispute' },
+        { name: 'AI Suggestions', path: '/user/ai-suggestions' },
+        { name: 'Mediation', path: '/user/mediation' },
+        { name: 'Documents', path: '/user/documents' },
+        { name: 'Case History', path: '/user/case-history' },
+      ];
+    } else if (userRole === 'court') {
+      return [
+        { name: 'Dashboard', path: '/court/dashboard' },
+        { name: 'Review Cases', path: '/court/review-cases' },
+        { name: 'Schedule', path: '/court/schedule' },
+        { name: 'Documents', path: '/court/documents' },
+        { name: 'Calendar', path: '/court/calendar' },
+      ];
+    }
+    return [];
+  };
 
+  const navItems = getNavItems();
   const isActive = (path) => location.pathname === path;
 
   return (
@@ -44,10 +64,62 @@ const Navbar = () => {
                 {item.name}
               </Link>
             ))}
+            
+            {/* User Menu */}
+            {currentUser && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+                >
+                  <User className="h-5 w-5" />
+                  <span>{currentUser.displayName || currentUser.email}</span>
+                </button>
+                
+                {showUserMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200"
+                  >
+                    <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
+                      <p className="font-medium">{currentUser.displayName || 'User'}</p>
+                      <p className="text-gray-500">{currentUser.email}</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {userRole === 'user' ? 'Citizen/User' : 'Court Official'}
+                      </p>
+                    </div>
+                    <Link
+                      to={userRole === 'user' ? '/user/profile' : '/court/profile'}
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      <Settings className="h-4 w-4 mr-2" />
+                      Settings
+                    </Link>
+                    <button
+                      onClick={signout}
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Sign out
+                    </button>
+                  </motion.div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden flex items-center">
+          <div className="md:hidden flex items-center space-x-2">
+            {currentUser && (
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="text-gray-700 hover:text-blue-600 focus:outline-none focus:text-blue-600"
+              >
+                <User className="h-6 w-6" />
+              </button>
+            )}
             <button
               onClick={() => setIsOpen(!isOpen)}
               className="text-gray-700 hover:text-blue-600 focus:outline-none focus:text-blue-600"
@@ -81,6 +153,36 @@ const Navbar = () => {
                 {item.name}
               </Link>
             ))}
+            
+            {currentUser && (
+              <>
+                <div className="border-t border-gray-200 pt-2 mt-2">
+                  <div className="px-3 py-2 text-sm text-gray-500">
+                    <p className="font-medium">{currentUser.displayName || 'User'}</p>
+                    <p className="text-xs">{currentUser.email}</p>
+                    <p className="text-xs mt-1">
+                      {userRole === 'user' ? 'Citizen/User' : 'Court Official'}
+                    </p>
+                  </div>
+                  <Link
+                    to={userRole === 'user' ? '/user/profile' : '/court/profile'}
+                    className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Settings
+                  </Link>
+                  <button
+                    onClick={() => {
+                      signout();
+                      setIsOpen(false);
+                    }}
+                    className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+                  >
+                    Sign out
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </motion.div>
       )}
