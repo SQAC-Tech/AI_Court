@@ -370,4 +370,23 @@ router.post('/logout', verifyJWT, (req, res) => {
   });
 });
 
+// Get all users (court only)
+router.get('/users', verifyJWT, requireRole(['court']), async (req, res) => {
+  try {
+    const users = await User.find({ role: 'user' })
+      .select('displayName email _id')
+      .sort({ displayName: 1 });
+
+    res.json({
+      users
+    });
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({
+      error: 'Server error',
+      message: 'Failed to get users'
+    });
+  }
+});
+
 module.exports = router; 
